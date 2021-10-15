@@ -1,0 +1,13 @@
+apiVersion: kuma.io/v1alpha1
+kind: ExternalService
+mesh: default
+metadata:
+  name: google
+spec:
+  tags:
+    kuma.io/service: google
+    kuma.io/protocol: http
+  networking:
+    address: google.com:443
+    tls:
+      enabled: true

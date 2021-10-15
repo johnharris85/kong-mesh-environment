@@ -1,0 +1,28 @@
+piVersion: kuma.io/v1alpha1
+kind: Mesh
+metadata:
+  name: default
+spec:
+  logging:
+    defaultBackend: file
+    backends:
+      - name: file
+        type: file
+        conf:
+          path: /tmp/access.log
+  tracing:
+    defaultBackend: jaeger-collector
+    backends:
+    - name: jaeger-collector
+      type: zipkin
+      sampling: 100.0
+      conf:
+        url: http://jaeger-collector.kuma-tracing:9411/api/v2/spans
+  mtls:
+    enabledBackend: ca-1
+    backends:
+    - name: ca-1
+      type: builtin
+  networking:
+    outbound:
+      passthrough: false
