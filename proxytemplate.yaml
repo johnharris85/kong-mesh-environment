@@ -1,0 +1,87 @@
+apiVersion: kuma.io/v1alpha1
+kind: ProxyTemplate
+mesh: default
+metadata:
+  name: nr-listener
+spec:
+  selectors:
+    - match:
+        kuma.io/service: '*'
+  conf:
+    imports:
+      - default-proxy
+    modifications:
+      - listener:
+          operation: add
+          value: |
+            name: trace_0
+            address:
+              socket_address: 
+                address: 127.0.0.1
+                port_value: 19876
+            filter_chains:
+            - filters:
+              - name: envoy.filters.network.http_connection_manager
+                typed_config:
+                  "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                  stat_prefix: zipkin_http
+                  http_protocol_options:
+                    header_key_format: 
+                      proper_case_words: {}
+                  route_config:
+                    name: local_route
+                    request_headers_to_add:
+                      - header: 
+                          key: "Api-Key"
+                          value: "XXXXXXXXXXXXXXXXXXXXX"
+                      - header: 
+                          key: "Data-Format"
+                          value: "zipkin"
+                      - header: 
+                          key: "Data-Format-Version"
+                          value: "2"
+                    virtual_hosts:
+                    - name: local_service
+                      domains: ["*"]
+                      routes:
+                      - match: 
+                          path: "/trace/v1"
+                        route: 
+                          cluster: zipkin_outbound
+                          host_rewrite_literal: trace-api.newrelic.com
+                  http_filters:
+                  - name: envoy.filters.http.router
+      - cluster:
+          operation: add
+          value: |
+            name: zipkin_outbound
+            typed_extension_protocol_options:
+              envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+                "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+                explicit_http_config:
+                  http_protocol_options:
+                    header_key_format: 
+                      proper_case_words: {}
+            connect_timeout: 2s
+            type: STRICT_DNS
+            lb_policy: ROUND_ROBIN
+            load_assignment:
+              cluster_name: zipkin_outbound
+              endpoints:
+              - lb_endpoints:
+                - endpoint:
+                    address:
+                      socket_address:
+                        address: trace-api.newrelic.com
+                        port_value: 443
+            transport_socket:
+              name: envoy.transport_sockets.tls
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+                sni: trace-api.newrelic.com
+                common_tls_context: 
+                  validation_context:
+                    match_subject_alt_names:
+                    - exact: "*.newrelic.com"
+                    trusted_ca:
+                      filename: /etc/ssl/certs/ca-certificates.crt

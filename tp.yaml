@@ -1,0 +1,50 @@
+apiVersion: kuma.io/v1alpha1
+kind: TrafficPermission
+mesh: default
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"kuma.io/v1alpha1","kind":"TrafficPermission","mesh":"default","metadata":{"annotations":{},"creationTimestamp":"2021-11-05T22:07:36Z","generation":1,"managedFields":[{"apiVersion":"kuma.io/v1alpha1","fieldsType":"FieldsV1","fieldsV1":{"f:mesh":{},"f:metadata":{"f:ownerReferences":{".":{},"k:{\"uid\":\"6bea4414-32a7-4738-9406-9bb8fddb3ed5\"}":{}}},"f:spec":{".":{},"f:destinations":{},"f:sources":{}}},"manager":"kuma-cp","operation":"Update","time":"2021-11-05T22:07:36Z"}],"name":"allow-all-default","ownerReferences":[{"apiVersion":"kuma.io/v1alpha1","kind":"Mesh","name":"default","uid":"6bea4414-32a7-4738-9406-9bb8fddb3ed5"}],"resourceVersion":"2236","uid":"839e0fec-d464-4941-ad20-2d9dbaa7ad9e"},"spec":{"destinations":[{"match":{"kuma.io/service":"kong-proxy_kong_svc_80"}}],"sources":[{"match":{"kuma.io/service":"httpbin_kong_svc_80"}}]}}
+  creationTimestamp: "2021-11-05T22:07:36Z"
+  generation: 2
+  managedFields:
+  - apiVersion: kuma.io/v1alpha1
+    fieldsType: FieldsV1
+    fieldsV1:
+      f:mesh: {}
+      f:metadata:
+        f:ownerReferences:
+          .: {}
+          k:{"uid":"6bea4414-32a7-4738-9406-9bb8fddb3ed5"}: {}
+      f:spec: {}
+    manager: kuma-cp
+    operation: Update
+    time: "2021-11-05T22:07:36Z"
+  - apiVersion: kuma.io/v1alpha1
+    fieldsType: FieldsV1
+    fieldsV1:
+      f:metadata:
+        f:annotations:
+          .: {}
+          f:kubectl.kubernetes.io/last-applied-configuration: {}
+      f:spec:
+        f:destinations: {}
+        f:sources: {}
+    manager: kubectl-client-side-apply
+    operation: Update
+    time: "2021-11-09T22:42:54Z"
+  name: allow-all-default
+  ownerReferences:
+  - apiVersion: kuma.io/v1alpha1
+    kind: Mesh
+    name: default
+    uid: 6bea4414-32a7-4738-9406-9bb8fddb3ed5
+  resourceVersion: "878276"
+  uid: 839e0fec-d464-4941-ad20-2d9dbaa7ad9e
+spec:
+  sources:
+  - match:
+      kuma.io/service: kong-proxy_kong_svc_80
+  destinations:
+  - match:
+      kuma.io/service: httpbin_kong_svc_80

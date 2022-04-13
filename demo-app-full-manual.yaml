@@ -301,6 +301,19 @@ spec:
       env: prod
   template:
     metadata:
+      annotations:
+        kuma.io/sidecar-injection: "false"
+        kuma.io/builtindns: enabled
+        kuma.io/builtindnsport: "15053"
+        kuma.io/mesh: default
+        kuma.io/sidecar-injected: "true"
+        kuma.io/sidecar-uid: "5678"
+        kuma.io/transparent-proxying: enabled
+        kuma.io/transparent-proxying-inbound-port: "15006"
+        kuma.io/transparent-proxying-inbound-v6-port: "15010"
+        kuma.io/transparent-proxying-outbound-port: "15001"
+        kuma.io/virtual-probes: disabled
+        kuma.io/virtual-probes-port: "9000"
       labels:
         app: kuma-demo-frontend
         version: v8
@@ -309,6 +322,7 @@ spec:
       containers:
       - name: netshoot
         securityContext:
+          privileged: true
           runAsUser: 0
           capabilities:
             add:
@@ -321,3 +335,145 @@ spec:
         image: kvn0218/kuma-demo-fe:latest
         args: ["-P", "http://backend:3001"]
         imagePullPolicy: IfNotPresent
+      - args:
+        - run
+        - --log-level=info
+        - --concurrency=2
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        - name: INSTANCE_IP
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.podIP
+        - name: KUMA_CONTROL_PLANE_CA_CERT
+          value: |
+            -----BEGIN CERTIFICATE-----
+            MIIDDzCCAfegAwIBAgIQU9FjrzXAwE/qhcAbCfXwhDANBgkqhkiG9w0BAQsFADAS
+            MRAwDgYDVQQDEwdrdW1hLWNhMB4XDTIxMTExMjE0MDYwMVoXDTMxMTExMDE0MDYw
+            MVowEjEQMA4GA1UEAxMHa3VtYS1jYTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCC
+            AQoCggEBAM67ltJQdafzyNMu/7+e6bDBL8SNfV8uO37wTLRWvbmLzljEodzvCcKU
+            NvJhZ/+tv7t5QPGEeEwQbHI8HeWM+Nu3mlu4rb14dDh9qBHvJlAMH4tQ5Q5RP7nc
+            V4YzGfXZMNlFUH9P09vcDwH1x2JkPnIVRWrPAsnet9sSFJl+NCk/cJ/8QLt0RMoT
+            Q7LF+DKwvMey2Qh/yMmBX0dQ6wJ5N3RpPX488Z6lx8gtlTvjbSafdNhkdWCRF2hC
+            2dTgl2V576KLfvUW4Ut+9TgpBW7pn6yGIRFs30xZAY0iJl4uX8b6eA6nD2Sskk6b
+            huBaE2ElKrJhwIIoPv0VaPJeAxHayb0CAwEAAaNhMF8wDgYDVR0PAQH/BAQDAgKk
+            MB0GA1UdJQQWMBQGCCsGAQUFBwMBBggrBgEFBQcDAjAPBgNVHRMBAf8EBTADAQH/
+            MB0GA1UdDgQWBBQap9Gg4c3miEtS7kDJmrrTybXwSjANBgkqhkiG9w0BAQsFAAOC
+            AQEAEU33wm31Ye7ved9QVR/QYbsKfeaGxLIB4IhelgoqT6WnB0Ru79ip8treqMli
+            PW7IJb2U+RD9KsurgTE3q1dy4ttiKgiQbDgrKd1a6Y2vbzxUwC2lOKuWH0jFkmJC
+            NjcTb+wjqIjQ0KyGE8dTmWrg1Oax5np+Yt5vuDp6la74GSQNMW7vSgDVktfqXD4n
+            JKvRH7W6PK6zhQqBZOs3nYe8YD2sP4BXvXYofuleUzAEtPunpc/DPtMCdpZ+Dy9L
+            ESNIKfsSBypEsV1wgu9ypXK70lJ3gM1Vz1f9bixiU2ZcOSU/oDCLxsEAj6Vv4VS1
+            aRLryu17ohwYDINxyNeJerkTxA==
+            -----END CERTIFICATE-----
+        - name: KUMA_CONTROL_PLANE_URL
+          value: https://kong-mesh-control-plane.kong-mesh-system:5678
+        - name: KUMA_DATAPLANE_ADMIN_PORT
+          value: "9901"
+        - name: KUMA_DATAPLANE_DRAIN_TIME
+          value: 30s
+        - name: KUMA_DATAPLANE_MESH
+          value: default
+        - name: KUMA_DATAPLANE_NAME
+          value: $(POD_NAME).$(POD_NAMESPACE)
+        - name: KUMA_DATAPLANE_RUNTIME_TOKEN_PATH
+          value: /var/run/secrets/kubernetes.io/serviceaccount/token
+        - name: KUMA_DNS_CORE_DNS_BINARY_PATH
+          value: coredns
+        - name: KUMA_DNS_CORE_DNS_EMPTY_PORT
+          value: "15054"
+        - name: KUMA_DNS_CORE_DNS_PORT
+          value: "15053"
+        - name: KUMA_DNS_ENABLED
+          value: "true"
+        - name: KUMA_DNS_ENVOY_DNS_PORT
+          value: "15055"
+        image: docker.io/kong/kuma-dp:1.4.1
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 12
+          httpGet:
+            path: /ready
+            port: 9901
+            scheme: HTTP
+          initialDelaySeconds: 60
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 3
+        name: kuma-sidecar
+        readinessProbe:
+          failureThreshold: 12
+          httpGet:
+            path: /ready
+            port: 9901
+            scheme: HTTP
+          initialDelaySeconds: 1
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 3
+        resources:
+          limits:
+            cpu: "1"
+            memory: 512Mi
+          requests:
+            cpu: 50m
+            memory: 64Mi
+        securityContext:
+          runAsGroup: 5678
+          runAsUser: 5678
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      enableServiceLinks: true
+      initContainers:
+      - args:
+        - --redirect-outbound-port
+        - "15001"
+        - --redirect-inbound=true
+        - --redirect-inbound-port
+        - "15006"
+        - --redirect-inbound-port-v6
+        - "15010"
+        - --kuma-dp-uid
+        - "5678"
+        - --exclude-inbound-ports
+        - ""
+        - --exclude-outbound-ports
+        - ""
+        - --verbose
+        - --skip-resolv-conf
+        - --redirect-all-dns-traffic
+        - --redirect-dns-port
+        - "15053"
+        command:
+        - /usr/bin/kumactl
+        - install
+        - transparent-proxy
+        image: johnharris85/kuma-init:1.4.1-ct
+        imagePullPolicy: IfNotPresent
+        name: kuma-init
+        resources:
+          limits:
+            cpu: 100m
+            memory: 50M
+          requests:
+            cpu: 10m
+            memory: 10M
+        securityContext:
+          capabilities:
+            add:
+            - NET_ADMIN
+          runAsGroup: 0
+          runAsUser: 0
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File

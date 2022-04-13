@@ -1,0 +1,33 @@
+apiVersion: kuma.io/v1alpha1
+kind: ProxyTemplate
+mesh: default
+metadata:
+  name: custom-template-1
+spec:
+  selectors:
+    - match:
+        kuma.io/service: backend_kuma-demo_svc_3001
+  conf:
+    imports:
+      - default-proxy
+    modifications:
+      - httpFilter:
+          operation: addBefore
+          match:
+            name: envoy.filters.http.router
+            origin: outbound
+          value: |
+            name: envoy.filters.http.ext_authz
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+              grpc_service:
+                google_grpc:
+                  target_uri: 127.0.0.1:9191
+                  stat_prefix: ext_authz
+                timeout: 0.500s
+              transport_api_version: V3
+      - httpFilter:
+          operation: remove
+          match:
+            name: envoy.filters.http.ext_authz
+            origin: inbound

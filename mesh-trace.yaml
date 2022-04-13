@@ -10,11 +10,20 @@ spec:
         type: file
         conf:
           path: /tmp/access.log
+  tracing:
+    defaultBackend: jaeger-collector
+    backends:
+    - name: jaeger-collector
+      type: zipkin
+      sampling: 100.0
+      conf:
+        url: http://127.0.0.1:19876/trace/v1
   mtls:
     enabledBackend: ca-1
     backends:
     - name: ca-1
       type: builtin
+      mode: PERMISSIVE
   networking:
     outbound:
-      passthrough: false
+      passthrough: true
